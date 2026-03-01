@@ -1,0 +1,30 @@
+{
+    "name": "Tina2 Basic",
+    "version": 2,
+    "inherits": "fdmprinter",
+    "metadata": {
+        "visible": true,
+        "author": "Custom",
+        "manufacturer": "Weedo"
+    },
+    "overrides": {
+        "machine_name": { "default_value": "Tina2 Basic" },
+        "machine_width": { "default_value": 100 },
+        "machine_depth": { "default_value": 120 },
+        "machine_height": { "default_value": 100 },
+        "machine_heated_bed": { "default_value": true },
+        "machine_center_is_zero": { "default_value": false },
+        "machine_gcode_flavor": { "default_value": "RepRap (Marlin/Sprinter)" },
+        "material_diameter": { "default_value": 1.75 },
+        "machine_nozzle_size": { "default_value": 0.4 },
+        "material_print_temperature": { "default_value": 200 },
+        "material_bed_temperature": { "default_value": 60 },
+        "speed_print": { "default_value": 50 },
+        "layer_height": { "default_value": 0.2 },
+        "wall_thickness": { "default_value": 1.2 },
+        "infill_sparse_density": { "default_value": 15 },
+        "support_enable": { "default_value": false },
+        "adhesion_type": { "default_value": "brim" },
+        "brim_width": { "default_value": 5 }
+    }
+}
