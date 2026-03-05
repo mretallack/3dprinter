@@ -103,56 +103,139 @@ models/
 
 **Iteration Management System:**
 
-To achieve high-quality results matching reference photos, we use a systematic iteration approach:
+To achieve high-quality results matching reference photos, we use a systematic iteration approach with continuous refinement based on visual comparison.
 
-1. **Feature Checklist** (`feature-checklist.md`)
-   - 27 detailed features across 5 categories
-   - Head, Ears, Body, Legs, Other features
+#### 1. Feature Checklist (`feature-checklist.md`)
+   - 52 detailed features across 5 categories (Head, Ears, Body, Legs, Other)
+   - **Precise measurements from reference photo**:
+     - Ear length: End ABOVE shoulders at neck junction (~18mm)
+     - Snout length: 50% of head length
+     - Head-to-body ratio: 1:2.5
+     - Ear-to-head ratio: 1.2-1.5x (NOT 2x)
    - Scoring system: Critical (must have), Important (should have), Nice-to-have
-   - Target: 87.5% (35/40 features minimum)
+   - Target: 86.5% (45/52 features minimum)
 
-2. **Iteration Files** (`iterations/dog-iter-XXX.*`)
+#### 2. Iteration Files (`iterations/dog-iter-XXX.*`)
    - Each iteration has separate `.scad`, `.stl`, `.jpg` files
    - Numbered sequentially (020, 021, 022, etc.)
    - Preserves history for comparison
    - Allows rollback if iteration regresses
 
-3. **Iteration Workflow**
+#### 3. Iteration Workflow
    ```bash
    # Copy previous iteration
-   cp iterations/dog-iter-021.scad iterations/dog-iter-022.scad
+   cp iterations/dog-iter-025.scad iterations/dog-iter-026.scad
    
    # Make targeted improvements in .scad file
    # Generate STL
    docker run --rm -v "$PWD/iterations:/work:z" -w /work \
-     openscad/openscad:latest openscad -o dog-iter-022.stl dog-iter-022.scad
+     openscad/openscad:latest openscad -o dog-iter-026.stl dog-iter-026.scad
    
    # Generate render
-   python3 render-iteration.py iterations/dog-iter-022.stl iterations/dog-iter-022.jpg
+   python3 render-iteration.py iterations/dog-iter-026.stl iterations/dog-iter-026.jpg
    
    # Score features
-   python3 score-iteration.py 22
+   python3 score-iteration.py 26
    
-   # Compare with previous iteration
+   # Compare with previous iteration and reference photo
    ```
 
-4. **Feature Scoring**
+#### 4. Visual Comparison & Analysis Process
+
+**Critical Step: Reference Photo Analysis**
+- Load reference photo alongside current iteration render
+- Identify specific discrepancies (e.g., "ears too long")
+- Measure proportions from reference photo
+- Update feature checklist with precise measurements
+- Document required changes
+
+**Example from Iteration 25→26:**
+1. **Observation**: Ears in iteration 25 reach chest level
+2. **Reference check**: In photo, ears end at neck/shoulder junction
+3. **Measurement**: Ears should be ~18mm, not ~30mm
+4. **Update checklist**: Add "Ears end ABOVE shoulders" requirement
+5. **Fix in code**: Reduce ear hull points from 10 to 6, shorten length
+6. **Verify**: Generate new render, compare side-by-side
+
+#### 5. Feature Scoring
    - Automated scoring against checklist
    - Visual comparison with reference photo
    - Progress tracking (e.g., 92.6% → 100%)
    - Identifies missing/weak features
+   - **Manual verification required** for proportions
 
-5. **Comparison Strategy**
-   - Side-by-side render comparison
-   - Reference photo overlay
+#### 6. Comparison Strategy
+   - Side-by-side render comparison (current vs previous)
+   - Reference photo overlay analysis
    - Feature-by-feature validation
    - Ensure each iteration improves or maintains quality
+   - **Document what changed and why**
+
+#### 7. Refinement Loop
+
+```
+1. Generate iteration N
+2. Render to JPG
+3. Compare with reference photo
+4. Identify specific issues (e.g., "ears too long")
+5. Update feature checklist if needed
+6. Create iteration N+1 with targeted fixes
+7. Repeat until target score achieved
+```
+
+**Key Principle**: Each iteration should fix specific, identified issues rather than making random changes.
 
 **Iteration Progress:**
 - Iteration 1-5: Failed (non-manifold geometry)
 - Iteration 6-20: Progressive refinement (sitting pose, proportions)
 - Iteration 21: 92.6% (added eyes, nose)
 - Iteration 22: 100% target (eyebrows, belly tuck)
+- Iteration 23: Refined ear texture (10 segments)
+- Iteration 24: Better shoulders (3-part body)
+- Iteration 25: Final polish
+- **Iteration 26: CRITICAL FIX - shortened ears based on reference analysis**
+
+### Reference Photo-Driven Development
+
+**Process for Using Reference Photos:**
+
+1. **Initial Analysis**
+   - Study reference photo carefully
+   - Identify key features and proportions
+   - Create initial feature checklist
+
+2. **Iterative Refinement**
+   - Generate model iteration
+   - Compare render with reference photo
+   - **Identify specific discrepancies** (most important step)
+   - Update feature checklist with precise measurements
+   - Fix issues in next iteration
+
+3. **Common Issues Found Through Comparison**
+   - Ears too long (fixed in iter 26)
+   - Snout too short (fixed in iter 26)
+   - Head too round (fixed in iter 26)
+   - Chest too prominent (fixed in iter 26)
+   - Back slope too steep (fixed in iter 26)
+
+4. **Measurement Techniques**
+   - Use reference photo to establish ratios
+   - Measure feature lengths relative to body
+   - Document in feature checklist
+   - Apply to OpenSCAD code
+
+**Example: Ear Length Correction**
+```
+Reference photo analysis:
+- Ear top: At top of head (z=34)
+- Ear bottom: At neck/shoulder junction (z=19)
+- Ear length: 15mm (NOT 30mm as in iter 25)
+
+Code change in iter 26:
+- Reduced hull points from 10 to 6
+- Changed z-coordinates: 34→19 instead of 37→7.5
+- Result: Ears now end above shoulders
+```
 
 ### OpenSCAD Modules
 
@@ -196,11 +279,17 @@ module dog_complete() {
 - ✅ No floating or disconnected triangles
 - ✅ Solid, printable mesh topology
 
-**Iteration 21+ Refinement:**
+**Iteration 21-25 Refinement:**
 - ✅ Added fine details (eyes, nose, eyebrows)
 - ✅ Improved proportions based on feature checklist
 - ✅ Systematic comparison with reference photo
 - ✅ Feature scoring ensures completeness
+
+**Iteration 26+ Reference-Driven Fixes:**
+- ✅ Precise measurements from reference photo
+- ✅ Identified and fixed specific issues (ear length)
+- ✅ Updated checklist with exact requirements
+- ✅ Continuous comparison and refinement
 
 **Critical Design Principles:**
 1. Use `hull()` for all connections between primitives
@@ -209,8 +298,10 @@ module dog_complete() {
 4. Always validate with both visual AND geometric checks
 5. Render with solid surfaces to verify mesh quality
 6. Use systematic iteration with feature tracking
-7. Compare each iteration against previous and reference
-8. Score features to ensure progress toward target
+7. **Compare each iteration against reference photo**
+8. **Identify specific issues, don't make random changes**
+9. **Update feature checklist when new requirements discovered**
+10. Score features to ensure progress toward target
 
 ### Parameters
 Key parameters will be configurable:
