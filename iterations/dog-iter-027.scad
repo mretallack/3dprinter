@@ -1,37 +1,11 @@
-// Sitting Spaniel Dog - Iteration 28 PRINTABLE
-// CRITICAL FIX: Model sitting on legs (paws on Z=0)
-// Previous iterations had model upside down
+// Sitting Spaniel Dog - Iteration 27
+// PRINTABILITY FIX: Ensure legs are on Z=0 (build plate)
+// Verify correct orientation for printing
 
 $fn = 45;
 
 module dog_complete() {
-    // Front legs - paws FLAT on build plate at Z=0
-    translate([5, -9, 0])
-        cylinder(h=18, d=5.5);
-    translate([5, 9, 0])
-        cylinder(h=18, d=5.5);
-    
-    // Front paws (on build plate)
-    translate([5, -9, 0])
-        sphere(d=6.5);
-    translate([5, 9, 0])
-        sphere(d=6.5);
-    
-    // Back legs - sitting position, paws on build plate
-    hull() {
-        translate([-15, -10, 0])
-            sphere(d=7);
-        translate([-15, -10, 6])
-            sphere(d=6.5);
-    }
-    hull() {
-        translate([-15, 10, 0])
-            sphere(d=7);
-        translate([-15, 10, 6])
-            sphere(d=6.5);
-    }
-    
-    // Body - above legs
+    // Body - sitting position
     hull() {
         translate([2, 0, 20])
             scale([1.4, 1.3, 1.6])
@@ -65,6 +39,14 @@ module dog_complete() {
     translate([22, 0, 31])
         sphere(d=2.2);
     
+    // Mouth
+    hull() {
+        translate([21, 0, 30])
+            sphere(d=0.8);
+        translate([18, 0, 29.5])
+            sphere(d=0.6);
+    }
+    
     // Eyes
     translate([13, -3.8, 33])
         sphere(d=1.6);
@@ -77,7 +59,7 @@ module dog_complete() {
     translate([13.5, 3.8, 34])
         sphere(d=1.2);
     
-    // Ears - ending at neck level
+    // Ears - shortened to end at neck
     hull() {
         translate([12, -7, 34])
             sphere(d=5);
@@ -108,6 +90,34 @@ module dog_complete() {
             sphere(d=2.5);
     }
     
+    // Front legs - MUST touch Z=0 (build plate)
+    hull() {
+        translate([5, -9, 0])  // Z=0 for build plate contact
+            sphere(d=6.5);
+        translate([5, -9, 18])
+            cylinder(h=0.1, d=5.5);
+    }
+    hull() {
+        translate([5, 9, 0])  // Z=0 for build plate contact
+            sphere(d=6.5);
+        translate([5, 9, 18])
+            cylinder(h=0.1, d=5.5);
+    }
+    
+    // Back legs - MUST touch Z=0 (build plate)
+    hull() {
+        translate([-15, -10, 0])  // Z=0 for build plate contact
+            sphere(d=7);
+        translate([-17, -10, 6])
+            sphere(d=6.5);
+    }
+    hull() {
+        translate([-15, 10, 0])  // Z=0 for build plate contact
+            sphere(d=7);
+        translate([-17, 10, 6])
+            sphere(d=6.5);
+    }
+    
     // Tail
     hull() {
         translate([-17, 0, 10])
@@ -119,4 +129,5 @@ module dog_complete() {
     }
 }
 
+// Ensure model is on build plate
 dog_complete();
