@@ -3,16 +3,17 @@ set -e
 
 echo "=== Building Dog Model ==="
 
-# Check for OpenSCAD
-if ! command -v openscad &> /dev/null; then
-    echo "ERROR: OpenSCAD not installed"
-    echo "Install with: sudo dnf install openscad"
+# Check for Docker
+if ! command -v docker &> /dev/null; then
+    echo "ERROR: Docker not installed"
+    echo "Install from: https://docs.docker.com/get-docker/"
     exit 1
 fi
 
-# Generate STL
-echo "Generating STL from OpenSCAD..."
-openscad -o models/dog-basic.stl models/dog-basic.scad
+# Generate STL using Docker OpenSCAD
+echo "Generating STL from OpenSCAD (Docker)..."
+docker run --rm -v "$PWD/models:/models" openscad/openscad:latest \
+    openscad -o /models/dog-basic.stl /models/dog-basic.scad
 
 echo "✓ STL generated: models/dog-basic.stl"
 

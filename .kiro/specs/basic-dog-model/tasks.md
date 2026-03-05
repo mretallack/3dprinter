@@ -2,7 +2,8 @@
 
 ## Setup Tasks
 
-- [ ] Install OpenSCAD on system
+- [ ] Install Docker on system
+- [ ] Pull openscad/openscad Docker image
 - [ ] Install CuraEngine on system
 - [ ] Verify OctoPrint connection and API key
 

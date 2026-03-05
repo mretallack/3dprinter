@@ -14,8 +14,11 @@ Simple 3D printable dog model for Tina2 Basic printer.
 ### Prerequisites
 
 ```bash
-# Install OpenSCAD
-sudo dnf install openscad
+# Install Docker
+# https://docs.docker.com/get-docker/
+
+# Pull OpenSCAD Docker image
+docker pull openscad/openscad:latest
 
 # Install CuraEngine (optional, for slicing)
 # Download from: https://github.com/Ultimaker/CuraEngine/releases
@@ -29,9 +32,10 @@ sudo dnf install openscad
 
 ### Manual Steps
 
-#### Generate STL only:
+#### Generate STL only (using Docker):
 ```bash
-openscad -o models/dog-basic.stl models/dog-basic.scad
+docker run --rm -v "$PWD/models:/models" openscad/openscad:latest \
+    openscad -o /models/dog-basic.stl /models/dog-basic.scad
 ```
 
 #### Slice with CuraEngine:

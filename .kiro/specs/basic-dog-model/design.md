@@ -3,13 +3,14 @@
 ## Technical Architecture
 
 ### Modeling Approach
-We will use **OpenSCAD** for parametric 3D modeling, allowing easy adjustments and reproducible builds.
+We will use **OpenSCAD** via Docker (`openscad/openscad`) for parametric 3D modeling, allowing easy adjustments and reproducible builds.
 
 **Rationale**: 
 - Code-based modeling enables version control
 - Parametric design allows easy size adjustments
 - Generates clean, manifold STL files
 - Free and open-source
+- Docker ensures consistent environment without local installation
 
 ### Model Design Strategy
 
@@ -165,6 +166,64 @@ Brim: Optional (5mm for bed adhesion)
 **Solution**: Reduce print speed to 40mm/s, increase $fn to 60
 
 ## Testing Strategy
+
+### LLM Agent Best Practices for OpenSCAD
+
+Based on research from OpenSCAD-Bench and recent LLM 3D modeling work:
+
+**Self-Verification Loop:**
+1. Generate OpenSCAD code
+2. Render the model to image
+3. Use multimodal vision to verify the output matches intent
+4. Iterate on code until satisfied
+5. Validate printability constraints
+
+**Key Challenges:**
+- LLMs can produce syntactically valid but geometrically incorrect models
+- Visual verification has limitations ("r's in strawberry" effect) - models may look correct at high level but have mangled geometry
+- Need explicit geometric validation, not just visual inspection
+
+**Best Practices:**
+- Always render and visually inspect generated models
+- Use automated geometry checks (manifold, dimensions, wall thickness)
+- Iterate with specific feedback about geometric issues
+- Test with simple primitives before complex shapes
+- Verify against printability constraints
+
+**See**: `agent-checklist.md` for complete validation workflow
+
+### Printability Validation Checklist
+
+Before printing, verify:
+
+#### Geometry Integrity
+- [ ] **Manifold/Watertight**: No holes, gaps, or non-manifold edges
+- [ ] **Correct Normals**: All faces oriented outward
+- [ ] **No Self-Intersections**: No overlapping geometry
+- [ ] **Closed Volume**: Model defines a solid volume
+
+#### Dimensional Constraints
+- [ ] **Build Volume**: Fits within printer dimensions (100×120×100mm for Tina2 Basic)
+- [ ] **Minimum Feature Size**: All features ≥ 0.4mm (nozzle diameter)
+- [ ] **Wall Thickness**: All walls ≥ 1.2mm (minimum), 2mm+ for functional parts
+- [ ] **Layer Height Compatible**: Features align with 0.2mm layer height
+
+#### Print Orientation & Supports
+- [ ] **Overhang Angle**: All overhangs ≤ 45° (or support structures added)
+- [ ] **Bridging Distance**: Unsupported spans ≤ 10mm
+- [ ] **Base Stability**: Model has stable base for bed adhesion
+- [ ] **Support Accessibility**: Support structures can be removed
+
+#### Material Considerations (PLA)
+- [ ] **No Thin Spikes**: Avoid features that will break during removal
+- [ ] **Adequate Infill Paths**: Internal geometry allows infill generation
+- [ ] **No Trapped Volumes**: No sealed internal cavities (unless intentional)
+
+#### Slicing Validation
+- [ ] **No Errors in Slicer**: Model imports without warnings
+- [ ] **Reasonable Print Time**: < 3 hours for test prints
+- [ ] **Material Usage**: Within expected range (~15g for this model)
+- [ ] **First Layer Coverage**: Good bed adhesion area
 
 ### Validation Steps
 1. **Geometry check**: Import STL into slicer, verify no errors
