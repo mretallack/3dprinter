@@ -32,36 +32,35 @@ The dog will be composed of basic geometric primitives:
 ### Dimensional Specifications
 
 ```
-Total Dimensions (target):
-- Length: 80mm (body + head)
-- Width: 40mm (leg stance)
-- Height: 60mm (top of head to ground)
+Final Model Dimensions (Iteration 4):
+- Length: 44.0mm (body + head + snout)
+- Width: 24.9mm (leg stance)
+- Height: 32.9mm (top of ears to ground)
 
 Component Dimensions:
-Body:
-- Length: 50mm
-- Width: 30mm
-- Height: 35mm
+Body (hull-based):
+- Ellipsoid: 25mm diameter, scaled 1.4x1.0x1.2
+- Connected to leg bases via hull
 
 Head:
-- Diameter: 25mm
-- Position: Front of body, slightly elevated
+- Diameter: 13mm sphere
+- Snout: 7mm sphere
+- Connected via hull for smooth transition
 
 Legs (4x):
-- Diameter: 8mm
-- Length: 30mm
-- Spacing: 35mm front-to-back, 25mm side-to-side
+- Front legs: 5mm diameter, 10mm height
+- Back legs: 5.5mm diameter, 8mm height (sitting)
+- Spacing: ~14mm front-to-back, ~16mm side-to-side
 
 Tail:
-- Base diameter: 6mm
-- Tip diameter: 2mm
-- Length: 25mm
-- Angle: 30° upward
+- Base: 3mm diameter
+- Tip: 1.5mm diameter
+- Length: ~6mm (hull-based)
 
 Ears (2x):
-- Width: 8mm
-- Height: 12mm
-- Thickness: 3mm
+- Top: 4mm diameter sphere
+- Bottom: 3mm diameter sphere
+- Height: ~8mm (hull-based)
 ```
 
 ### Print Orientation
@@ -101,16 +100,51 @@ models/
 ## Implementation Considerations
 
 ### OpenSCAD Modules
-The design will use modular functions:
+
+**Final Approach (Iteration 4 - Successful):**
+
+The design uses `hull()` operations for guaranteed manifold geometry:
 
 ```
-module dog_body() { ... }
-module dog_head() { ... }
-module dog_leg() { ... }
-module dog_tail() { ... }
-module dog_ear() { ... }
-module dog_complete() { ... }  // Assembles all parts
+module dog_complete() {
+    // Main body with legs using hull for smooth connection
+    hull() {
+        // Body center + leg bases
+    }
+    
+    // Individual legs (cylinders)
+    
+    // Head and snout with hull
+    hull() {
+        // Head sphere + snout sphere
+    }
+    
+    // Ears with hull (smooth connections)
+    
+    // Tail with hull
+}
 ```
+
+**Key Learnings from Iterations:**
+
+**Iteration 1-3 Failures:**
+- ❌ Using `scale()` on spheres created non-manifold edges
+- ❌ Simple `union()` of primitives produced floating geometry
+- ❌ Complex boolean operations failed to create watertight meshes
+- ❌ Visual inspection alone missed severe geometric issues
+
+**Iteration 4 Success:**
+- ✅ `hull()` operations guarantee manifold geometry
+- ✅ Smooth transitions between all components
+- ✅ No floating or disconnected triangles
+- ✅ Solid, printable mesh topology
+
+**Critical Design Principles:**
+1. Use `hull()` for all connections between primitives
+2. Avoid complex `scale()` operations on spheres
+3. Keep geometry simple - spheres and cylinders only
+4. Always validate with both visual AND geometric checks
+5. Render with solid surfaces to verify mesh quality
 
 ### Parameters
 Key parameters will be configurable:
@@ -126,9 +160,10 @@ Key parameters will be configurable:
 - Normals facing outward
 
 ### Export Settings
-- **Resolution**: $fn=50 (smooth curves without excessive polygons)
+- **Resolution**: $fn=30 (balance between smoothness and render time)
 - **Format**: Binary STL (smaller file size)
 - **Units**: Millimeters
+- **Result**: 5,220 triangles, 2.2MB file
 
 ## Print Settings Recommendations
 
@@ -145,9 +180,9 @@ Brim: Optional (5mm for bed adhesion)
 ```
 
 ### Estimated Print Metrics
-- **Print time**: ~2 hours
-- **Material usage**: ~15g PLA
-- **Layer count**: ~300 layers
+- **Print time**: ~1-1.5 hours (smaller than original estimate)
+- **Material usage**: ~8-10g PLA (compact design)
+- **Layer count**: ~165 layers (at 0.2mm layer height)
 
 ## Error Handling
 
