@@ -99,9 +99,64 @@ models/
 
 ## Implementation Considerations
 
+### Systematic Iteration Approach
+
+**Iteration Management System:**
+
+To achieve high-quality results matching reference photos, we use a systematic iteration approach:
+
+1. **Feature Checklist** (`feature-checklist.md`)
+   - 27 detailed features across 5 categories
+   - Head, Ears, Body, Legs, Other features
+   - Scoring system: Critical (must have), Important (should have), Nice-to-have
+   - Target: 87.5% (35/40 features minimum)
+
+2. **Iteration Files** (`iterations/dog-iter-XXX.*`)
+   - Each iteration has separate `.scad`, `.stl`, `.jpg` files
+   - Numbered sequentially (020, 021, 022, etc.)
+   - Preserves history for comparison
+   - Allows rollback if iteration regresses
+
+3. **Iteration Workflow**
+   ```bash
+   # Copy previous iteration
+   cp iterations/dog-iter-021.scad iterations/dog-iter-022.scad
+   
+   # Make targeted improvements in .scad file
+   # Generate STL
+   docker run --rm -v "$PWD/iterations:/work:z" -w /work \
+     openscad/openscad:latest openscad -o dog-iter-022.stl dog-iter-022.scad
+   
+   # Generate render
+   python3 render-iteration.py iterations/dog-iter-022.stl iterations/dog-iter-022.jpg
+   
+   # Score features
+   python3 score-iteration.py 22
+   
+   # Compare with previous iteration
+   ```
+
+4. **Feature Scoring**
+   - Automated scoring against checklist
+   - Visual comparison with reference photo
+   - Progress tracking (e.g., 92.6% → 100%)
+   - Identifies missing/weak features
+
+5. **Comparison Strategy**
+   - Side-by-side render comparison
+   - Reference photo overlay
+   - Feature-by-feature validation
+   - Ensure each iteration improves or maintains quality
+
+**Iteration Progress:**
+- Iteration 1-5: Failed (non-manifold geometry)
+- Iteration 6-20: Progressive refinement (sitting pose, proportions)
+- Iteration 21: 92.6% (added eyes, nose)
+- Iteration 22: 100% target (eyebrows, belly tuck)
+
 ### OpenSCAD Modules
 
-**Final Approach (Iteration 4 - Successful):**
+**Final Approach (Iteration 20+ - Successful):**
 
 The design uses `hull()` operations for guaranteed manifold geometry:
 
@@ -122,6 +177,8 @@ module dog_complete() {
     // Ears with hull (smooth connections)
     
     // Tail with hull
+    
+    // NEW in iter 21+: Eyes, nose, eyebrows
 }
 ```
 
@@ -133,11 +190,17 @@ module dog_complete() {
 - ❌ Complex boolean operations failed to create watertight meshes
 - ❌ Visual inspection alone missed severe geometric issues
 
-**Iteration 4 Success:**
+**Iteration 4-20 Success:**
 - ✅ `hull()` operations guarantee manifold geometry
 - ✅ Smooth transitions between all components
 - ✅ No floating or disconnected triangles
 - ✅ Solid, printable mesh topology
+
+**Iteration 21+ Refinement:**
+- ✅ Added fine details (eyes, nose, eyebrows)
+- ✅ Improved proportions based on feature checklist
+- ✅ Systematic comparison with reference photo
+- ✅ Feature scoring ensures completeness
 
 **Critical Design Principles:**
 1. Use `hull()` for all connections between primitives
@@ -145,6 +208,9 @@ module dog_complete() {
 3. Keep geometry simple - spheres and cylinders only
 4. Always validate with both visual AND geometric checks
 5. Render with solid surfaces to verify mesh quality
+6. Use systematic iteration with feature tracking
+7. Compare each iteration against previous and reference
+8. Score features to ensure progress toward target
 
 ### Parameters
 Key parameters will be configurable:
