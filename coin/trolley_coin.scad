@@ -124,6 +124,11 @@ module holder() {
                         sphere(d=holder_ball_diameter, $fn=30);
             }
         }
+        
+        // NEW: Remove front lip for easy coin removal
+        // Cylinder cutout at front edge (opposite keyring end)
+        translate([0, -holder_teardrop_width/2, holder_wall_thickness])
+            cylinder(h=holder_pocket_depth + 1, d=holder_pocket_diameter + 2);
     }
 }
 
