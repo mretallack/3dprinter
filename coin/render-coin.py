@@ -31,41 +31,45 @@ def render_view(triangles, bounds, angle_x, angle_z, output_file, view_name):
     center_y = (min_y + max_y) / 2
     center_z = (min_z + max_z) / 2
     
-    width, height = 800, 600
-    img = Image.new('RGB', (width, height), 'white')
+    width, height = 1200, 900
+    img = Image.new('RGB', (width, height), (240, 240, 240))
     draw = ImageDraw.Draw(img)
     
     model_size = max(max_x - min_x, max_y - min_y, max_z - min_z)
-    scale = min(400 / model_size, 10)
+    scale = min(500 / model_size, 12)
+    
+    # Light direction
+    light = [0.5, 0.5, 1.0]
+    light_mag = math.sqrt(sum(l*l for l in light))
+    light = [l/light_mag for l in light]
     
     def project(x, y, z):
-        # Center
         x -= center_x
         y -= center_y
         z -= center_z
         
-        # Rotate around X axis
+        # Rotate around X
         cos_x = math.cos(math.radians(angle_x))
         sin_x = math.sin(math.radians(angle_x))
         y2 = y * cos_x - z * sin_x
         z2 = y * sin_x + z * cos_x
         
-        # Rotate around Z axis
+        # Rotate around Z
         cos_z = math.cos(math.radians(angle_z))
         sin_z = math.sin(math.radians(angle_z))
         x3 = x * cos_z - y2 * sin_z
         y3 = x * sin_z + y2 * cos_z
         
-        # Isometric projection
+        # Isometric
         angle = math.radians(30)
         ix = (x3 - y3) * math.cos(angle) * scale
         iy = (x3 + y3) * math.sin(angle) * scale - z2 * scale
-        return (width/2 + ix, height/2 - iy + 50)
+        return (width/2 + ix, height/2 - iy)
     
-    # Calculate normals and sort by depth
+    # Calculate normals and lighting
     tri_data = []
     for tri in triangles:
-        # Calculate normal
+        # Normal
         v1 = [tri[1][i] - tri[0][i] for i in range(3)]
         v2 = [tri[2][i] - tri[0][i] for i in range(3)]
         normal = [
@@ -74,32 +78,43 @@ def render_view(triangles, bounds, angle_x, angle_z, output_file, view_name):
             v1[0]*v2[1] - v1[1]*v2[0]
         ]
         
-        # Calculate depth (average z after rotation)
-        avg_depth = sum(v[0] + v[1] - v[2] for v in tri) / 3
+        # Normalize
+        mag = math.sqrt(sum(n*n for n in normal))
+        if mag > 0:
+            normal = [n/mag for n in normal]
         
-        # Check if facing camera (backface culling)
+        # Lighting (dot product with light direction)
+        brightness = max(0, sum(normal[i] * light[i] for i in range(3)))
+        
+        # Depth
+        avg_depth = sum(v[0] + v[1] - v[2]*2 for v in tri) / 3
+        
+        # Backface culling
         view_dir = [0, 0, 1]
-        dot = sum(normal[i] * view_dir[i] for i in range(3))
+        facing = sum(normal[i] * view_dir[i] for i in range(3))
         
-        tri_data.append((avg_depth, tri, dot > 0))
+        tri_data.append((avg_depth, tri, facing > 0, brightness))
     
     # Sort back to front
     tri_data.sort(reverse=True)
     
-    # Draw only front-facing triangles
-    for depth, tri, is_front in tri_data:
+    # Draw with lighting
+    for depth, tri, is_front, brightness in tri_data:
         if is_front:
             pts = [project(*v) for v in tri]
-            # Vary color slightly based on depth for 3D effect
-            brightness = int(180 + (depth % 50))
-            color = (brightness, brightness, 255)
+            # Apply lighting to color
+            base_color = 100
+            lit_color = int(base_color + brightness * 155)
+            color = (lit_color, lit_color, min(255, lit_color + 50))
             draw.polygon(pts, fill=color, outline=None)
     
-    # Add label
-    draw.text((10, 10), f"{view_name}", fill='black')
-    draw.text((10, 30), f"Pattern height: 0.3mm", fill='black')
+    # Add label with shadow
+    draw.text((11, 11), f"{view_name}", fill='black')
+    draw.text((10, 10), f"{view_name}", fill='white')
+    draw.text((11, 31), f"Pattern: 0.3mm", fill='black')
+    draw.text((10, 30), f"Pattern: 0.3mm", fill='white')
     
-    img.save(output_file, 'JPEG')
+    img.save(output_file, 'JPEG', quality=95)
     print(f"✓ Rendered: {output_file}")
 
 # Read STL
