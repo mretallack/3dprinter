@@ -62,16 +62,17 @@ def render_view(triangles, bounds, angle_x, angle_z, output_file, view_name):
         iy = (x3 + y3) * math.sin(angle) * scale - z2 * scale
         return (width/2 + ix, height/2 - iy + 50)
     
-    # Sort and draw triangles
+    # Sort and draw triangles (solid fill)
     tri_depths = []
     for tri in triangles:
-        avg_z = sum(v[2] for v in tri) / 3
-        tri_depths.append((avg_z, tri))
+        # Calculate average depth for sorting
+        avg_depth = sum(v[0] + v[1] + v[2] for v in tri) / 3
+        tri_depths.append((avg_depth, tri))
     tri_depths.sort()
     
     for _, tri in tri_depths:
         pts = [project(*v) for v in tri]
-        draw.polygon(pts, fill='lightblue', outline='blue')
+        draw.polygon(pts, fill='lightblue', outline='darkblue')
     
     # Add label
     draw.text((10, 10), f"{view_name}", fill='black')
