@@ -62,17 +62,38 @@ def render_view(triangles, bounds, angle_x, angle_z, output_file, view_name):
         iy = (x3 + y3) * math.sin(angle) * scale - z2 * scale
         return (width/2 + ix, height/2 - iy + 50)
     
-    # Sort and draw triangles (solid fill)
-    tri_depths = []
+    # Calculate normals and sort by depth
+    tri_data = []
     for tri in triangles:
-        # Calculate average depth for sorting
-        avg_depth = sum(v[0] + v[1] + v[2] for v in tri) / 3
-        tri_depths.append((avg_depth, tri))
-    tri_depths.sort()
+        # Calculate normal
+        v1 = [tri[1][i] - tri[0][i] for i in range(3)]
+        v2 = [tri[2][i] - tri[0][i] for i in range(3)]
+        normal = [
+            v1[1]*v2[2] - v1[2]*v2[1],
+            v1[2]*v2[0] - v1[0]*v2[2],
+            v1[0]*v2[1] - v1[1]*v2[0]
+        ]
+        
+        # Calculate depth (average z after rotation)
+        avg_depth = sum(v[0] + v[1] - v[2] for v in tri) / 3
+        
+        # Check if facing camera (backface culling)
+        view_dir = [0, 0, 1]
+        dot = sum(normal[i] * view_dir[i] for i in range(3))
+        
+        tri_data.append((avg_depth, tri, dot > 0))
     
-    for _, tri in tri_depths:
-        pts = [project(*v) for v in tri]
-        draw.polygon(pts, fill='lightblue', outline='darkblue')
+    # Sort back to front
+    tri_data.sort(reverse=True)
+    
+    # Draw only front-facing triangles
+    for depth, tri, is_front in tri_data:
+        if is_front:
+            pts = [project(*v) for v in tri]
+            # Vary color slightly based on depth for 3D effect
+            brightness = int(180 + (depth % 50))
+            color = (brightness, brightness, 255)
+            draw.polygon(pts, fill=color, outline=None)
     
     # Add label
     draw.text((10, 10), f"{view_name}", fill='black')
