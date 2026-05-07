@@ -24,6 +24,7 @@ keyring_end_height = 4.0;    // Height of narrow end (must be taller than hole d
 keyring_end_offset = 2.0;    // Additional distance from holder body
 holder_teardrop_length = 35; // Total length of teardrop (extended for keyring space)
 holder_teardrop_width = 28;  // Width at widest point (increased to fully cover 22.5mm coin + walls)
+finger_hole_diameter = 14.0; // Hole in base to push coin out with finger
 
 // Pattern parameters
 pattern_type = "concentric"; // "concentric", "radial", or "hexagonal"
@@ -41,18 +42,12 @@ $fn = 100; // Circle resolution
 
 // ===== MODULES =====
 
-// Coin with finger grip recess and chamfered base
-coin_chamfer = 0.8;  // Height/width of bottom edge chamfer
-
+// Coin with finger grip recess
 module coin() {
     difference() {
         union() {
-            // Main body with chamfered bottom edge
-            // Bottom chamfer cone section
-            cylinder(h=coin_chamfer, d1=coin_diameter - coin_chamfer*2, d2=coin_diameter);
-            // Straight section above chamfer
-            translate([0, 0, coin_chamfer])
-                cylinder(h=coin_thickness - coin_chamfer, d=coin_diameter);
+            // Simple uniform cylinder
+            cylinder(h=coin_thickness, d=coin_diameter);
             
             // Pattern on top face
             translate([0, 0, coin_thickness])
@@ -135,6 +130,10 @@ module holder() {
         // Cylinder cutout at front edge (opposite keyring end)
         translate([0, -holder_teardrop_width/2, holder_wall_thickness])
             cylinder(h=holder_pocket_depth + 1, d=holder_pocket_diameter + 2);
+        
+        // Finger hole through base to push coin out
+        translate([0, 0, -0.01])
+            cylinder(h=holder_wall_thickness + 0.02, d=finger_hole_diameter);
     }
 }
 
