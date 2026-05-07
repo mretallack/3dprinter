@@ -65,8 +65,13 @@ The Docker image includes profiles at `/printer-settings/`. Use with `-j`:
 
 OctoPrint URL: `http://flower.retallack.org.uk:5000`
 
+Load API key from `.env`:
 ```bash
-curl -H "X-Api-Key: $OCTOPRINT_API_KEY" \
+source .env
+```
+
+```bash
+curl -H "X-Api-Key: $OCTOPRINT_KEY" \
   -F "file=@output.gcode" \
   http://flower.retallack.org.uk:5000/api/files/local
 ```
@@ -74,7 +79,7 @@ curl -H "X-Api-Key: $OCTOPRINT_API_KEY" \
 ### Upload and start printing immediately
 
 ```bash
-curl -H "X-Api-Key: $OCTOPRINT_API_KEY" \
+curl -H "X-Api-Key: $OCTOPRINT_KEY" \
   -F "file=@output.gcode" \
   -F "print=true" \
   http://flower.retallack.org.uk:5000/api/files/local
@@ -83,13 +88,16 @@ curl -H "X-Api-Key: $OCTOPRINT_API_KEY" \
 ### Check printer status
 
 ```bash
-curl -H "X-Api-Key: $OCTOPRINT_API_KEY" \
+curl -H "X-Api-Key: $OCTOPRINT_KEY" \
   http://flower.retallack.org.uk:5000/api/printer
 ```
 
 ## Full Pipeline Example
 
 ```bash
+# Load API key
+source .env
+
 # 1. Generate STL from SCAD
 docker run --rm -v "$(pwd)/coin:/data" openscad/openscad:latest \
   openscad -o /data/trolley_coin.stl /data/trolley_coin.scad
@@ -105,7 +113,7 @@ docker run --rm -v "$(pwd)/coin:/stl" \
   -l /stl/trolley_coin.stl
 
 # 3. Upload to OctoPrint
-curl -H "X-Api-Key: $OCTOPRINT_API_KEY" \
+curl -H "X-Api-Key: $OCTOPRINT_KEY" \
   -F "file=@coin/trolley_coin.gcode" \
   http://flower.retallack.org.uk:5000/api/files/local
 ```
@@ -127,5 +135,4 @@ docker build -t cura-engine .
 - CuraEngine version: 3.6 (older but functional for standard FDM)
 - The verbose WARNING output during slicing is normal — it dumps resolved settings
 - GCode flavour: Marlin (RepRap)
-- OctoPrint API key: found in OctoPrint Settings → API
-- Set `OCTOPRINT_API_KEY` environment variable for convenience
+- OctoPrint API key: stored in `.env` as `OCTOPRINT_KEY` (run `source .env` before use)
