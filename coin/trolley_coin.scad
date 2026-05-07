@@ -41,12 +41,18 @@ $fn = 100; // Circle resolution
 
 // ===== MODULES =====
 
-// Coin with finger grip recess
+// Coin with finger grip recess and chamfered base
+coin_chamfer = 0.8;  // Height/width of bottom edge chamfer
+
 module coin() {
     difference() {
         union() {
-            // Simple uniform cylinder
-            cylinder(h=coin_thickness, d=coin_diameter);
+            // Main body with chamfered bottom edge
+            // Bottom chamfer cone section
+            cylinder(h=coin_chamfer, d1=coin_diameter - coin_chamfer*2, d2=coin_diameter);
+            // Straight section above chamfer
+            translate([0, 0, coin_chamfer])
+                cylinder(h=coin_thickness - coin_chamfer, d=coin_diameter);
             
             // Pattern on top face
             translate([0, 0, coin_thickness])
