@@ -31,6 +31,7 @@ docker run --rm \
   -s layer_height=0.2 \
   -s material_diameter=1.75 \
   -s speed_print=40 \
+  -s material_print_temperature=210 -s material_print_temperature_layer_0=210 \
   -l /stl/input.stl
 ```
 
@@ -47,7 +48,7 @@ docker run --rm \
 | `infill_sparse_density` | 20 | Infill percentage |
 | `support_enable` | false | Enable supports |
 | `adhesion_type` | brim | brim, skirt, raft, or none |
-| `material_print_temperature` | 200 | Nozzle temp (°C) |
+| `material_print_temperature` | 210 | Nozzle temp (°C) |
 | `material_bed_temperature` | 60 | Bed temp (°C) |
 
 ### Available Printer Profiles
@@ -110,6 +111,7 @@ docker run --rm -v "$(pwd)/coin:/stl" \
   -o /stl/trolley_coin.gcode \
   -s machine_width=100 -s machine_depth=120 -s machine_height=100 \
   -s layer_height=0.2 -s material_diameter=1.75 -s speed_print=40 \
+  -s material_print_temperature=210 -s material_print_temperature_layer_0=210 \
   -l /stl/trolley_coin.stl
 
 # 3. Upload to OctoPrint
