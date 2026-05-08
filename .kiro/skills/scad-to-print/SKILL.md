@@ -9,6 +9,25 @@ Complete headless workflow: OpenSCAD → STL → GCode → OctoPrint.
 
 All steps run via Docker with no local installs required.
 
+## Before Printing — Ask the User
+
+Before slicing, ask the user for these settings (defaults in brackets):
+
+1. **Infill density** — how solid the print should be [20%]
+2. **Layer height** — print quality vs speed [0.2mm standard, 0.12mm fine]
+3. **Support enabled** — does the model need supports? [no]
+4. **Print speed** — outer wall speed [35mm/s]
+
+Pass these as CLI overrides to OrcaSlicer:
+```
+--sparse-infill-density "30%"
+--layer-height 0.12
+--enable-support 1
+--outer-wall-speed 30
+```
+
+If the user doesn't specify, use the defaults from the process profile.
+
 ## Printer
 
 - **Printer**: Weedo Tina2 Basic (100×100×100mm build volume, no heated bed)
