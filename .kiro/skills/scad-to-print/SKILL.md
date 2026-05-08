@@ -9,6 +9,12 @@ Complete headless workflow: OpenSCAD → STL → GCode → OctoPrint.
 
 All steps run via Docker with no local installs required.
 
+## Printer
+
+- **Printer**: Weedo Tina2 Basic (100×100×100mm build volume, no heated bed)
+- **OctoPrint**: http://flower.retallack.org.uk:5000
+- **API key**: stored in `.env` as `OCTOPRINT_KEY`
+
 ## Step 1: SCAD → STL
 
 ```bash
@@ -16,74 +22,54 @@ docker run --rm -v "$(pwd):/data" openscad/openscad:latest \
   openscad -o /data/output.stl /data/input.scad
 ```
 
-## Step 2: STL → GCode (CuraEngine)
+## Step 2: STL → GCode (OrcaSlicer)
+
+Uses OrcaSlicer 2.3.2 via the LinuxServer Docker image with Tina2 profiles at `printer-profiles/orca/`.
 
 ```bash
 docker run --rm \
-  -v "$(pwd):/stl" \
-  -e CURA_ENGINE_SEARCH_PATH=/printer-settings \
-  cura-engine CuraEngine slice \
-  -j /printer-settings/fdmprinter.def.json \
-  -o /stl/output.gcode \
-  -s machine_width=100 \
-  -s machine_depth=120 \
-  -s machine_height=100 \
-  -s layer_height=0.2 \
-  -s material_diameter=1.75 \
-  -s speed_print=40 \
-  -s material_print_temperature=210 -s material_print_temperature_layer_0=210 \
-  -l /stl/input.stl
+  -v "$(pwd):/stl:z" \
+  -v "$(pwd)/printer-profiles/orca:/profiles:z" \
+  --entrypoint /opt/orcaslicer/bin/orca-slicer \
+  ghcr.io/linuxserver/orcaslicer \
+  --slice 1 \
+  --load-settings "/profiles/machine.json;/profiles/process.json" \
+  --load-filaments "/profiles/filament.json" \
+  --export-3mf /stl/output.gcode.3mf \
+  /stl/input.stl
 ```
 
-### Common Settings Overrides (Tina2 Basic defaults)
+## Step 3: Extract GCode from 3MF
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `layer_height` | 0.2 | Layer height in mm |
-| `machine_width` | 100 | Bed width (mm) |
-| `machine_depth` | 120 | Bed depth (mm) |
-| `machine_height` | 100 | Max print height (mm) |
-| `material_diameter` | 1.75 | Filament diameter (mm) |
-| `speed_print` | 40 | Print speed (mm/s) |
-| `infill_sparse_density` | 20 | Infill percentage |
-| `support_enable` | false | Enable supports |
-| `adhesion_type` | brim | brim, skirt, raft, or none |
-| `material_print_temperature` | 210 | Nozzle temp (°C) |
-| `material_bed_temperature` | 60 | Bed temp (°C) |
+OrcaSlicer outputs a `.gcode.3mf` archive. Extract the gcode:
 
-### Available Printer Profiles
+```bash
+unzip -o output.gcode.3mf "Metadata/plate_1.gcode" -d /tmp/orca_out
+```
 
-The Docker image includes profiles at `/printer-settings/`. Use with `-j`:
+## Step 4: Post-process for Tina2
 
-- `fdmprinter.def.json` — Generic FDM (use with `-s` overrides)
-- `creality_ender3.def.json` — Creality Ender 3
-- `creality_cr10.def.json` — Creality CR-10
-- `prusa_i3_mk2.def.json` — Prusa i3 MK2
-- `ultimaker3.def.json` — Ultimaker 3
-- `anycubic_i3_mega.def.json` — Anycubic i3 Mega
+**Critical step.** OrcaSlicer auto-inserts M190/M140 (bed temp) and M201/M203/M204/M205 (acceleration/jerk limits) that the Tina2 Basic firmware cannot handle. The post-processor strips these.
 
-## Step 3: Upload to OctoPrint
+```bash
+python3 printer-profiles/orca/postprocess_tina2.py /tmp/orca_out/Metadata/plate_1.gcode output.gcode
+```
 
-OctoPrint URL: `http://flower.retallack.org.uk:5000`
+## Step 5: Upload to OctoPrint
 
-Load API key from `.env`:
 ```bash
 source .env
-```
-
-```bash
 curl -H "X-Api-Key: $OCTOPRINT_KEY" \
   -F "file=@output.gcode" \
   http://flower.retallack.org.uk:5000/api/files/local
 ```
 
-### Upload and start printing immediately
+### Start printing immediately
 
 ```bash
-curl -H "X-Api-Key: $OCTOPRINT_KEY" \
-  -F "file=@output.gcode" \
-  -F "print=true" \
-  http://flower.retallack.org.uk:5000/api/files/local
+curl -H "X-Api-Key: $OCTOPRINT_KEY" -H "Content-Type: application/json" \
+  -d '{"command": "select", "print": true}' \
+  http://flower.retallack.org.uk:5000/api/files/local/output.gcode
 ```
 
 ### Check printer status
@@ -96,45 +82,79 @@ curl -H "X-Api-Key: $OCTOPRINT_KEY" \
 ## Full Pipeline Example
 
 ```bash
-# Load API key
 source .env
 
 # 1. Generate STL from SCAD
 docker run --rm -v "$(pwd)/coin:/data" openscad/openscad:latest \
   openscad -o /data/trolley_coin.stl /data/trolley_coin.scad
 
-# 2. Slice to GCode (Tina2 Basic: 100x120x100mm bed)
-docker run --rm -v "$(pwd)/coin:/stl" \
-  -e CURA_ENGINE_SEARCH_PATH=/printer-settings \
-  cura-engine CuraEngine slice \
-  -j /printer-settings/fdmprinter.def.json \
-  -o /stl/trolley_coin.gcode \
-  -s machine_width=100 -s machine_depth=120 -s machine_height=100 \
-  -s layer_height=0.2 -s material_diameter=1.75 -s speed_print=40 \
-  -s material_print_temperature=210 -s material_print_temperature_layer_0=210 \
-  -l /stl/trolley_coin.stl
+# 2. Slice with OrcaSlicer
+docker run --rm \
+  -v "$(pwd)/coin:/stl:z" \
+  -v "$(pwd)/printer-profiles/orca:/profiles:z" \
+  --entrypoint /opt/orcaslicer/bin/orca-slicer \
+  ghcr.io/linuxserver/orcaslicer \
+  --slice 1 \
+  --load-settings "/profiles/machine.json;/profiles/process.json" \
+  --load-filaments "/profiles/filament.json" \
+  --export-3mf /stl/trolley_coin.gcode.3mf \
+  /stl/trolley_coin.stl
 
-# 3. Upload to OctoPrint
+# 3. Extract gcode
+unzip -o coin/trolley_coin.gcode.3mf "Metadata/plate_1.gcode" -d /tmp/orca_out
+
+# 4. Post-process (strip commands Tina2 can't handle)
+python3 printer-profiles/orca/postprocess_tina2.py /tmp/orca_out/Metadata/plate_1.gcode coin/trolley_coin.gcode
+
+# 5. Upload to OctoPrint
 curl -H "X-Api-Key: $OCTOPRINT_KEY" \
   -F "file=@coin/trolley_coin.gcode" \
   http://flower.retallack.org.uk:5000/api/files/local
 ```
 
-## Docker Image Setup
+## Tina2 Profile Settings
 
-The `cura-engine` image must be built once:
+Profiles are at `printer-profiles/orca/`:
 
-```bash
-git clone https://github.com/Printerverse/CuraEngine-Docker.git /tmp/CuraEngine-Docker
-cd /tmp/CuraEngine-Docker
-docker build -t cura-engine .
-```
+| Setting | Value | File |
+|---------|-------|------|
+| Bed size | 100×100mm | machine.json |
+| Height | 100mm | machine.json |
+| Nozzle | 0.4mm | machine.json |
+| Heated bed | No | machine.json |
+| Retraction | 3mm at 40mm/s | machine.json |
+| Layer height | 0.2mm | process.json |
+| First layer height | 0.35mm | process.json |
+| Outer wall speed | 35mm/s | process.json |
+| Inner wall speed | 40mm/s | process.json |
+| Infill speed | 50mm/s | process.json |
+| Travel speed | 50mm/s | process.json |
+| First layer speed | 20mm/s | process.json |
+| Infill density | 20% | process.json |
+| Filament | PLA 1.75mm | filament.json |
+| Nozzle temp | 210°C | filament.json |
+| Bed temp | 0 (no heated bed) | filament.json |
+
+## Post-processor Details
+
+`printer-profiles/orca/postprocess_tina2.py` removes:
+
+- **M190/M140** — bed temperature commands (Tina2 Basic has no heated bed, these block forever)
+- **M201** — acceleration limits (before start gcode only)
+- **M203** — max feedrate (before start gcode only — preserved inside start gcode where M203 Z15/Z5 controls Tina2 Z speed)
+- **M204** — print/retract acceleration
+- **M205** — jerk limits
+
+These are auto-inserted by OrcaSlicer and the Tina2 firmware either ignores them or behaves erratically with them.
+
+## Docker Images Required
+
+- `openscad/openscad:latest` — SCAD to STL
+- `ghcr.io/linuxserver/orcaslicer:latest` — STL to GCode (OrcaSlicer 2.3.2)
 
 ## Notes
 
-- **Printer**: Weedo Tina2 Basic (100×120×100mm build volume, 40mm/s)
-- **OctoPrint**: http://flower.retallack.org.uk:5000
-- CuraEngine version: 3.6 (older but functional for standard FDM)
-- The verbose WARNING output during slicing is normal — it dumps resolved settings
-- GCode flavour: Marlin (RepRap)
-- OctoPrint API key: stored in `.env` as `OCTOPRINT_KEY` (run `source .env` before use)
+- OpenGL errors during slicing are normal (thumbnail generation fails headlessly) — slicing still works
+- The Tina2 start gcode includes G29 (auto bed levelling) which is critical
+- GCode flavour: Marlin
+- OrcaSlicer outputs `.gcode.3mf` not raw `.gcode` — must extract from archive
