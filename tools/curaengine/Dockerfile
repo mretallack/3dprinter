@@ -28,6 +28,9 @@ RUN conan install . --build=missing --update
 RUN cmake --preset conan-release
 RUN cmake --build --preset conan-release
 
+# Make shared libraries available
+RUN find /root/.conan2 -name "*.so*" -path "*/lib/*" -exec cp -L {} /usr/local/lib/ \; 2>/dev/null; ldconfig
+
 # Copy printer definitions from Cura repo
 RUN git clone --depth 1 https://github.com/Ultimaker/Cura.git /tmp/Cura \
     && cp -r /tmp/Cura/resources/definitions /definitions \
