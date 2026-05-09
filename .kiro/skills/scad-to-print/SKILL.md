@@ -51,12 +51,16 @@ docker run --rm \
   -s machine_width=100 \
   -s machine_depth=100 \
   -s center_object=true \
+  -s raft_margin=8 \
+  -s raft_base_margin=8 \
+  -s raft_interface_margin=8 \
+  -s raft_surface_margin=8 \
   -l /data/input.stl
 ```
 
 ### Required Overrides
 
-These must always be passed (the bundled Tina2 definition has some incorrect defaults):
+These must always be passed (the bundled Tina2 definition has incorrect defaults for CLI use):
 
 | Setting | Value | Reason |
 |---------|-------|--------|
@@ -67,6 +71,12 @@ These must always be passed (the bundled Tina2 definition has some incorrect def
 | `machine_width` | 100 | Definition says 100 but verify centering |
 | `machine_depth` | 100 | Definition says 120, actual bed is 100 |
 | `center_object` | true | Ensures model is centred on bed |
+| `raft_margin` | 8 | CLI doesn't cascade weedo_base default (would use 15mm) |
+| `raft_base_margin` | 8 | Per-layer margin, defaults to 15mm without override |
+| `raft_interface_margin` | 8 | Per-layer margin, defaults to 15mm without override |
+| `raft_surface_margin` | 8 | Per-layer margin, defaults to 15mm without override |
+
+**Raft margin note**: The `weedo_base.def.json` sets `raft_margin=8` via `default_value`, but CuraEngine 5.14 CLI does not cascade this to the per-layer margins (`raft_base_margin`, `raft_interface_margin`, `raft_surface_margin`), which default to 15mm from `fdmprinter.def.json`. The UltiMaker GUI resolves this correctly. Without these overrides, the raft is ~15mm larger on each side, adding ~14 minutes to print time.
 
 ### Optional Overrides
 
@@ -114,6 +124,7 @@ docker run --rm \
   -s layer_height=0.2 -s infill_sparse_density=30 \
   -s material_print_temperature=210 -s material_print_temperature_layer_0=210 \
   -s machine_width=100 -s machine_depth=100 -s center_object=true \
+  -s raft_margin=8 -s raft_base_margin=8 -s raft_interface_margin=8 -s raft_surface_margin=8 \
   -l /data/trolley_coin.stl
 
 # 3. Upload to OctoPrint
@@ -147,4 +158,5 @@ Build takes ~7 minutes. Only needs to be done once.
 - Raft is enabled by default in the Tina2 definition (required for cold bed adhesion)
 - Raft air gap is 0.19mm (built into definition) — model peels off cleanly
 - No post-processing needed (unlike OrcaSlicer which required stripping M190/M201 etc)
-- GCode output is identical format to UltiMaker Cura GUI
+- GCode output matches UltiMaker Cura GUI when raft margins are set correctly
+- Expected print time for trolley coin: ~35 minutes (with correct raft margins)
