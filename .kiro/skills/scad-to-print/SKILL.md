@@ -9,30 +9,22 @@ Complete headless workflow: OpenSCAD → STL → GCode → OctoPrint.
 
 All steps run via Docker with no local installs required.
 
-## Before Printing — Ask the User
-
-Before slicing, ask the user for these settings (defaults in brackets):
-
-1. **Infill density** — how solid the print should be [20%]
-2. **Layer height** — print quality vs speed [0.2mm standard, 0.12mm fine]
-3. **Support enabled** — does the model need supports? [no]
-4. **Print speed** — outer wall speed [35mm/s]
-
-Pass these as CLI overrides to OrcaSlicer:
-```
---sparse-infill-density "30%"
---layer-height 0.12
---enable-support 1
---outer-wall-speed 30
-```
-
-If the user doesn't specify, use the defaults from the process profile.
-
 ## Printer
 
 - **Printer**: Weedo Tina2 Basic (100×100×100mm build volume, no heated bed)
 - **OctoPrint**: http://flower.retallack.org.uk:5000
 - **API key**: stored in `.env` as `OCTOPRINT_KEY`
+- **Slicer**: CuraEngine 5.14 (same engine as UltiMaker Cura GUI)
+
+## Before Printing — Ask the User
+
+Before slicing, ask the user for these settings (defaults in brackets):
+
+1. **Infill density** — how solid the print should be [30%]
+2. **Layer height** — print quality vs speed [0.2mm standard, 0.12mm fine]
+3. **Support enabled** — does the model need supports? [no]
+
+Pass these as `-s` overrides to CuraEngine.
 
 ## Step 1: SCAD → STL
 
@@ -41,40 +33,51 @@ docker run --rm -v "$(pwd):/data" openscad/openscad:latest \
   openscad -o /data/output.stl /data/input.scad
 ```
 
-## Step 2: STL → GCode (OrcaSlicer)
-
-Uses OrcaSlicer 2.3.2 via the LinuxServer Docker image with Tina2 profiles at `printer-profiles/orca/`.
+## Step 2: STL → GCode (CuraEngine 5.14)
 
 ```bash
 docker run --rm \
-  -v "$(pwd):/stl:z" \
-  -v "$(pwd)/printer-profiles/orca:/profiles:z" \
-  --entrypoint /opt/orcaslicer/bin/orca-slicer \
-  ghcr.io/linuxserver/orcaslicer \
-  --slice 1 \
-  --load-settings "/profiles/machine.json;/profiles/process.json" \
-  --load-filaments "/profiles/filament.json" \
-  --export-3mf /stl/output.gcode.3mf \
-  /stl/input.stl
+  -v "$(pwd):/data:z" \
+  -e CURA_ENGINE_SEARCH_PATH=/definitions:/extruders \
+  curaengine5 slice \
+  -j /definitions/entina_tina2.def.json \
+  -o /data/output.gcode \
+  -s roofing_layer_count=0 \
+  -s flooring_layer_count=0 \
+  -s layer_height=0.2 \
+  -s infill_sparse_density=30 \
+  -s material_print_temperature=210 \
+  -s material_print_temperature_layer_0=210 \
+  -s machine_width=100 \
+  -s machine_depth=100 \
+  -s center_object=true \
+  -l /data/input.stl
 ```
 
-## Step 3: Extract GCode from 3MF
+### Required Overrides
 
-OrcaSlicer outputs a `.gcode.3mf` archive. Extract the gcode:
+These must always be passed (the bundled Tina2 definition has some incorrect defaults):
 
-```bash
-unzip -o output.gcode.3mf "Metadata/plate_1.gcode" -d /tmp/orca_out
-```
+| Setting | Value | Reason |
+|---------|-------|--------|
+| `roofing_layer_count` | 0 | Not in definition, engine errors without it |
+| `flooring_layer_count` | 0 | Not in definition, engine errors without it |
+| `material_print_temperature` | 210 | Definition defaults to 215 |
+| `material_print_temperature_layer_0` | 210 | Definition defaults to 215 |
+| `machine_width` | 100 | Definition says 100 but verify centering |
+| `machine_depth` | 100 | Definition says 120, actual bed is 100 |
+| `center_object` | true | Ensures model is centred on bed |
 
-## Step 4: Post-process for Tina2
+### Optional Overrides
 
-**Critical step.** OrcaSlicer auto-inserts M190/M140 (bed temp) and M201/M203/M204/M205 (acceleration/jerk limits) that the Tina2 Basic firmware cannot handle. The post-processor strips these.
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `layer_height` | 0.2 | Layer height in mm |
+| `infill_sparse_density` | 30 | Infill percentage |
+| `support_enable` | false | Enable supports |
+| `adhesion_type` | raft | raft, brim, skirt, or none |
 
-```bash
-python3 printer-profiles/orca/postprocess_tina2.py /tmp/orca_out/Metadata/plate_1.gcode output.gcode
-```
-
-## Step 5: Upload to OctoPrint
+## Step 3: Upload to OctoPrint
 
 ```bash
 source .env
@@ -91,13 +94,6 @@ curl -H "X-Api-Key: $OCTOPRINT_KEY" -H "Content-Type: application/json" \
   http://flower.retallack.org.uk:5000/api/files/local/output.gcode
 ```
 
-### Check printer status
-
-```bash
-curl -H "X-Api-Key: $OCTOPRINT_KEY" \
-  http://flower.retallack.org.uk:5000/api/printer
-```
-
 ## Full Pipeline Example
 
 ```bash
@@ -107,73 +103,48 @@ source .env
 docker run --rm -v "$(pwd)/coin:/data" openscad/openscad:latest \
   openscad -o /data/trolley_coin.stl /data/trolley_coin.scad
 
-# 2. Slice with OrcaSlicer
+# 2. Slice with CuraEngine 5.14
 docker run --rm \
-  -v "$(pwd)/coin:/stl:z" \
-  -v "$(pwd)/printer-profiles/orca:/profiles:z" \
-  --entrypoint /opt/orcaslicer/bin/orca-slicer \
-  ghcr.io/linuxserver/orcaslicer \
-  --slice 1 \
-  --load-settings "/profiles/machine.json;/profiles/process.json" \
-  --load-filaments "/profiles/filament.json" \
-  --export-3mf /stl/trolley_coin.gcode.3mf \
-  /stl/trolley_coin.stl
+  -v "$(pwd)/coin:/data:z" \
+  -e CURA_ENGINE_SEARCH_PATH=/definitions:/extruders \
+  curaengine5 slice \
+  -j /definitions/entina_tina2.def.json \
+  -o /data/trolley_coin.gcode \
+  -s roofing_layer_count=0 -s flooring_layer_count=0 \
+  -s layer_height=0.2 -s infill_sparse_density=30 \
+  -s material_print_temperature=210 -s material_print_temperature_layer_0=210 \
+  -s machine_width=100 -s machine_depth=100 -s center_object=true \
+  -l /data/trolley_coin.stl
 
-# 3. Extract gcode
-unzip -o coin/trolley_coin.gcode.3mf "Metadata/plate_1.gcode" -d /tmp/orca_out
-
-# 4. Post-process (strip commands Tina2 can't handle)
-python3 printer-profiles/orca/postprocess_tina2.py /tmp/orca_out/Metadata/plate_1.gcode coin/trolley_coin.gcode
-
-# 5. Upload to OctoPrint
+# 3. Upload to OctoPrint
 curl -H "X-Api-Key: $OCTOPRINT_KEY" \
   -F "file=@coin/trolley_coin.gcode" \
   http://flower.retallack.org.uk:5000/api/files/local
+
+# 4. Start print
+curl -H "X-Api-Key: $OCTOPRINT_KEY" -H "Content-Type: application/json" \
+  -d '{"command": "select", "print": true}' \
+  http://flower.retallack.org.uk:5000/api/files/local/trolley_coin.gcode
 ```
-
-## Tina2 Profile Settings
-
-Profiles are at `printer-profiles/orca/`:
-
-| Setting | Value | File |
-|---------|-------|------|
-| Bed size | 100×100mm | machine.json |
-| Height | 100mm | machine.json |
-| Nozzle | 0.4mm | machine.json |
-| Heated bed | No | machine.json |
-| Retraction | 3mm at 40mm/s | machine.json |
-| Layer height | 0.2mm | process.json |
-| First layer height | 0.35mm | process.json |
-| Outer wall speed | 35mm/s | process.json |
-| Inner wall speed | 40mm/s | process.json |
-| Infill speed | 50mm/s | process.json |
-| Travel speed | 50mm/s | process.json |
-| First layer speed | 20mm/s | process.json |
-| Infill density | 20% | process.json |
-| Filament | PLA 1.75mm | filament.json |
-| Nozzle temp | 210°C | filament.json |
-| Bed temp | 0 (no heated bed) | filament.json |
-
-## Post-processor Details
-
-`printer-profiles/orca/postprocess_tina2.py` removes:
-
-- **M190/M140** — bed temperature commands (Tina2 Basic has no heated bed, these block forever)
-- **M201** — acceleration limits (before start gcode only)
-- **M203** — max feedrate (before start gcode only — preserved inside start gcode where M203 Z15/Z5 controls Tina2 Z speed)
-- **M204** — print/retract acceleration
-- **M205** — jerk limits
-
-These are auto-inserted by OrcaSlicer and the Tina2 firmware either ignores them or behaves erratically with them.
 
 ## Docker Images Required
 
 - `openscad/openscad:latest` — SCAD to STL
-- `ghcr.io/linuxserver/orcaslicer:latest` — STL to GCode (OrcaSlicer 2.3.2)
+- `curaengine5` — STL to GCode (CuraEngine 5.14, built from `tools/curaengine/Dockerfile`)
+
+### Building CuraEngine Docker Image
+
+```bash
+docker build -t curaengine5 tools/curaengine/
+```
+
+Build takes ~7 minutes. Only needs to be done once.
 
 ## Notes
 
-- OpenGL errors during slicing are normal (thumbnail generation fails headlessly) — slicing still works
-- The Tina2 start gcode includes G29 (auto bed levelling) which is critical
-- GCode flavour: Marlin
-- OrcaSlicer outputs `.gcode.3mf` not raw `.gcode` — must extract from archive
+- CuraEngine 5.14 uses the same engine as UltiMaker Cura GUI
+- The `entina_tina2.def.json` printer definition is bundled (from Cura repo)
+- Raft is enabled by default in the Tina2 definition (required for cold bed adhesion)
+- Raft air gap is 0.19mm (built into definition) — model peels off cleanly
+- No post-processing needed (unlike OrcaSlicer which required stripping M190/M201 etc)
+- GCode output is identical format to UltiMaker Cura GUI
