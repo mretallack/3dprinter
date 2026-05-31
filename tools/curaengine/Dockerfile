@@ -20,7 +20,7 @@ RUN conan config install https://github.com/ultimaker/conan-config.git \
     && conan profile detect --force
 
 # Clone CuraEngine
-RUN git clone --depth 1 https://github.com/Ultimaker/CuraEngine.git /CuraEngine
+RUN git clone --depth 1 --branch 5.13.0 https://github.com/Ultimaker/CuraEngine.git /CuraEngine
 WORKDIR /CuraEngine
 
 # Build
@@ -32,7 +32,7 @@ RUN cmake --build --preset conan-release
 RUN find /root/.conan2 -name "*.so*" -path "*/lib/*" -exec cp -L {} /usr/local/lib/ \; 2>/dev/null; ldconfig
 
 # Copy printer definitions from Cura repo
-RUN git clone --depth 1 https://github.com/Ultimaker/Cura.git /tmp/Cura \
+RUN git clone --depth 1 --branch 5.13.0 https://github.com/Ultimaker/Cura.git /tmp/Cura \
     && cp -r /tmp/Cura/resources/definitions /definitions \
     && cp -r /tmp/Cura/resources/extruders /extruders \
     && rm -rf /tmp/Cura
