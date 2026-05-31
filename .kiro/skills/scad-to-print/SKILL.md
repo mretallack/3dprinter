@@ -39,7 +39,7 @@ docker run --rm -v "$(pwd):/data" openscad/openscad:latest \
 docker run --rm \
   -v "$(pwd):/data:z" \
   -e CURA_ENGINE_SEARCH_PATH=/definitions:/extruders \
-  curaengine5 slice \
+  markretallackhome/curaengine5 slice \
   -j /definitions/entina_tina2.def.json \
   -o /data/output.gcode \
   -s roofing_layer_count=0 \
@@ -55,6 +55,7 @@ docker run --rm \
   -s raft_base_margin=8 \
   -s raft_interface_margin=8 \
   -s raft_surface_margin=8 \
+  -s raft_airgap=0.25 \
   -l /data/input.stl
 ```
 
@@ -75,6 +76,7 @@ These must always be passed (the bundled Tina2 definition has incorrect defaults
 | `raft_base_margin` | 8 | Per-layer margin, defaults to 15mm without override |
 | `raft_interface_margin` | 8 | Per-layer margin, defaults to 15mm without override |
 | `raft_surface_margin` | 8 | Per-layer margin, defaults to 15mm without override |
+| `raft_airgap` | 0.25 | Definition says 0.19, but raft sticks too much; 0.25 peels cleanly |
 
 **Raft margin note**: The `weedo_base.def.json` sets `raft_margin=8` via `default_value`, but CuraEngine 5.14 CLI does not cascade this to the per-layer margins (`raft_base_margin`, `raft_interface_margin`, `raft_surface_margin`), which default to 15mm from `fdmprinter.def.json`. The UltiMaker GUI resolves this correctly. Without these overrides, the raft is ~15mm larger on each side, adding ~14 minutes to print time.
 
@@ -117,7 +119,7 @@ docker run --rm -v "$(pwd)/coin:/data" openscad/openscad:latest \
 docker run --rm \
   -v "$(pwd)/coin:/data:z" \
   -e CURA_ENGINE_SEARCH_PATH=/definitions:/extruders \
-  curaengine5 slice \
+  markretallackhome/curaengine5 slice \
   -j /definitions/entina_tina2.def.json \
   -o /data/trolley_coin.gcode \
   -s roofing_layer_count=0 -s flooring_layer_count=0 \
@@ -125,6 +127,7 @@ docker run --rm \
   -s material_print_temperature=210 -s material_print_temperature_layer_0=210 \
   -s machine_width=100 -s machine_depth=100 -s center_object=true \
   -s raft_margin=8 -s raft_base_margin=8 -s raft_interface_margin=8 -s raft_surface_margin=8 \
+  -s raft_airgap=0.25 \
   -l /data/trolley_coin.stl
 
 # 3. Upload to OctoPrint
@@ -141,10 +144,13 @@ curl -H "X-Api-Key: $OCTOPRINT_KEY" -H "Content-Type: application/json" \
 ## Docker Images Required
 
 - `openscad/openscad:latest` — SCAD to STL
-- `curaengine5` — STL to GCode (CuraEngine 5.14, built from `tools/curaengine/Dockerfile`)
+- `markretallackhome/curaengine5` — STL to GCode (CuraEngine 5.14, built from `tools/curaengine/Dockerfile`)
 
 ### Building CuraEngine Docker Image
 
+Pre-built on Docker Hub: `docker pull markretallackhome/curaengine5`
+
+To rebuild locally:
 ```bash
 docker build -t curaengine5 tools/curaengine/
 ```
@@ -156,7 +162,7 @@ Build takes ~7 minutes. Only needs to be done once.
 - CuraEngine 5.14 uses the same engine as UltiMaker Cura GUI
 - The `entina_tina2.def.json` printer definition is bundled (from Cura repo)
 - Raft is enabled by default in the Tina2 definition (required for cold bed adhesion)
-- Raft air gap is 0.19mm (built into definition) — model peels off cleanly
+- Raft air gap is 0.25mm (overridden from definition's 0.19mm for easier raft removal)
 - No post-processing needed (unlike OrcaSlicer which required stripping M190/M201 etc)
 - GCode output matches UltiMaker Cura GUI when raft margins are set correctly
 - Expected print time for trolley coin: ~35 minutes (with correct raft margins)

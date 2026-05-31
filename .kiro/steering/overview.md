@@ -14,7 +14,7 @@ This repo contains parametric 3D models designed for FDM 3D printing. Models are
 ## Tools & Workflow
 
 - **OpenSCAD** via Docker (`openscad/openscad:latest`) for SCAD → STL
-- **CuraEngine 5.14** via Docker (`curaengine5`) for STL → GCode
+- **CuraEngine 5.14** via Docker (`markretallackhome/curaengine5`) for STL → GCode
 - **OctoPrint** at `http://flower.retallack.org.uk:5000` for printing
 - **Python (numpy-stl + matplotlib)** for headless STL → PNG rendering
 
@@ -44,7 +44,7 @@ docker run --rm -v "$(pwd)/coin:/data" openscad/openscad:latest \
 # STL to GCode (CuraEngine 5.14)
 docker run --rm -v "$(pwd)/coin:/data:z" \
   -e CURA_ENGINE_SEARCH_PATH=/definitions:/extruders \
-  curaengine5 slice -j /definitions/entina_tina2.def.json \
+  markretallackhome/curaengine5 slice -j /definitions/entina_tina2.def.json \
   -o /data/output.gcode \
   -s roofing_layer_count=0 -s flooring_layer_count=0 \
   -s layer_height=0.2 -s infill_sparse_density=30 \
@@ -61,4 +61,4 @@ python3 .kiro/skills/render-openscad/render_stl.py <input.stl> <output.png>
 | Image | Purpose | Build |
 |-------|---------|-------|
 | `openscad/openscad:latest` | SCAD → STL | Pre-built (Docker Hub) |
-| `curaengine5` | STL → GCode | `docker build -t curaengine5 tools/curaengine/` |
+| `markretallackhome/curaengine5` | STL → GCode | Pre-built (Docker Hub), source: `tools/curaengine/` |

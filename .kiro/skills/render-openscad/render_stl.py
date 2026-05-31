@@ -15,14 +15,26 @@ from stl import mesh
 def render(stl_path, output_path, elev=30, azim=45, title=None):
     stl_mesh = mesh.Mesh.from_file(stl_path)
 
+    # Shift model so lowest point sits on ground (Z=0)
+    z_min = stl_mesh.vectors[:, :, 2].min()
+    stl_mesh.vectors[:, :, 2] -= z_min
+
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111, projection='3d')
     ax.add_collection3d(mplot3d.art3d.Poly3DCollection(
         stl_mesh.vectors, alpha=0.7, edgecolor='k', linewidth=0.1, facecolor='goldenrod'
     ))
 
-    scale = stl_mesh.points.flatten()
-    ax.auto_scale_xyz(scale, scale, scale)
+    # Set axis limits based on actual model bounds
+    all_points = stl_mesh.vectors.reshape(-1, 3)
+    x_min, x_max = all_points[:, 0].min(), all_points[:, 0].max()
+    y_min, y_max = all_points[:, 1].min(), all_points[:, 1].max()
+    z_max = all_points[:, 2].max()
+    max_range = max(x_max - x_min, y_max - y_min, z_max) / 2
+    x_mid, y_mid = (x_max + x_min) / 2, (y_max + y_min) / 2
+    ax.set_xlim(x_mid - max_range, x_mid + max_range)
+    ax.set_ylim(y_mid - max_range, y_mid + max_range)
+    ax.set_zlim(0, max_range * 2)
     ax.view_init(elev=elev, azim=azim)
 
     if title is None:
