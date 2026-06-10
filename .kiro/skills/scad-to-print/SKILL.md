@@ -67,8 +67,10 @@ docker run --rm \
   -s layer_height=0.2 \
   -s infill_sparse_density=20 \
   -s material_print_temperature=200 \
-  -s material_print_temperature_layer_0=200 \
+  -s material_print_temperature_layer_0=210 \
   -s speed_travel=65 \
+  -s speed_print=25 \
+  -s speed_wall_0=20 \
   -s machine_width=100 \
   -s machine_depth=100 \
   -s center_object=true \
@@ -89,7 +91,9 @@ These must always be passed (the bundled Tina2 definition has incorrect defaults
 | `roofing_layer_count` | 0 | Not in definition, engine errors without it |
 | `flooring_layer_count` | 0 | Not in definition, engine errors without it |
 | `material_print_temperature` | 200 | GUI uses 200°C; definition defaults to 215 |
-| `material_print_temperature_layer_0` | 200 | GUI uses 200°C; definition defaults to 215 |
+| `material_print_temperature_layer_0` | 210 | Hotter first layer/raft for better cold bed adhesion |
+| `speed_print` | 25 | Definition defaults to 70mm/s, too fast for quality prints |
+| `speed_wall_0` | 20 | Slower outer walls for better surface finish |
 | `speed_travel` | 65 | Definition defaults to 120mm/s, too fast for Tina2 frame |
 | `machine_width` | 100 | Definition says 100 but verify centering |
 | `machine_depth` | 100 | Definition says 120, actual bed is 100 |
@@ -126,7 +130,7 @@ After slicing, fix these known CuraEngine CLI issues:
 
 ### 1. Fix unresolved temperature variable
 ```bash
-sed -i 's/M109 S{material_print_temperature_layer_0}/M109 S200/' output.gcode
+sed -i 's/M109 S{material_print_temperature_layer_0}/M109 S210/' output.gcode
 ```
 
 ### 2. Verify gcode is valid
@@ -171,15 +175,15 @@ docker run --rm \
   -o /data/trolley_coin.gcode \
   -s roofing_layer_count=0 -s flooring_layer_count=0 \
   -s layer_height=0.2 -s infill_sparse_density=20 \
-  -s material_print_temperature=200 -s material_print_temperature_layer_0=200 \
-  -s speed_travel=65 \
+  -s material_print_temperature=200 -s material_print_temperature_layer_0=210 \
+  -s speed_print=25 -s speed_wall_0=20 -s speed_travel=65 \
   -s machine_width=100 -s machine_depth=100 -s center_object=true \
   -s raft_margin=8 -s raft_base_margin=8 -s raft_interface_margin=8 -s raft_surface_margin=8 \
   -s raft_airgap=0.25 \
   -l /data/trolley_coin.stl
 
 # 3. Post-process
-sed -i 's/M109 S{material_print_temperature_layer_0}/M109 S200/' coin/trolley_coin.gcode
+sed -i 's/M109 S{material_print_temperature_layer_0}/M109 S210/' coin/trolley_coin.gcode
 
 # 4. Upload to OctoPrint
 curl -H "X-Api-Key: $OCTOPRINT_KEY" \
@@ -251,7 +255,7 @@ Build takes ~7 minutes. Only needs to be done once.
 
 ### Unresolved variables in gcode
 - CuraEngine CLI sometimes outputs `{setting_name}` instead of values in start gcode
-- Fix with sed: `sed -i 's/M109 S{material_print_temperature_layer_0}/M109 S200/'`
+- Fix with sed: `sed -i 's/M109 S{material_print_temperature_layer_0}/M109 S210/'`
 
 ## Notes
 
