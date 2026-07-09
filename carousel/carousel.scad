@@ -116,8 +116,10 @@ module spur_gear() {
 }
 
 module crown_gear() {
-    // Flat disc with teeth on face (pointing up) + nub below + stub above
+    // Flat disc with short teeth around rim (on face) + nub below + stub above
     gear_r = gear_pitch_d / 2;
+    crown_tooth_pitch = 3.14159 * gear_pitch_d / gear_teeth;
+    crown_tooth_width = crown_tooth_pitch / 2;
 
     union() {
         // Nub below (bearing in housing floor)
@@ -127,23 +129,21 @@ module crown_gear() {
         // Main disc
         cylinder(h=gear_thickness, r=gear_r, $fn=60);
 
-        // Face teeth (on top of disc, pointing radially inward from edge)
+        // Face teeth - short bumps around the rim only (not full radius)
         for (i = [0:gear_teeth-1]) {
             angle = i * (360 / gear_teeth);
             rotate([0, 0, angle])
-                translate([gear_r - tooth_height, 0, gear_thickness])
-                    rotate([0, 0, 0])
-                        linear_extrude(height=tooth_top_width + 0.8)
-                            tooth_2d();
+                translate([gear_r - tooth_height, -crown_tooth_width/2, gear_thickness])
+                    cube([tooth_height, crown_tooth_width, tooth_height]);
         }
 
         // Stub above (bearing through lid, D-flat for pole)
-        translate([0, 0, gear_thickness])
+        translate([0, 0, gear_thickness + tooth_height])
             difference() {
-                cylinder(h=crown_stub_h + tooth_height + 1, r=crown_stub_d/2, $fn=30);
+                cylinder(h=crown_stub_h, r=crown_stub_d/2, $fn=30);
                 // D-flat on stub
                 translate([crown_stub_d/2 + crown_stub_d/2 - 1, 0, 0])
-                    cube([crown_stub_d, crown_stub_d, (crown_stub_h + tooth_height + 1) * 2 + 1], center=true);
+                    cube([crown_stub_d, crown_stub_d, crown_stub_h * 2 + 1], center=true);
             }
     }
 }
