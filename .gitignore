@@ -2,3 +2,5 @@
 *.gcode
 *.svg
 *.png
+/.env
+
