@@ -78,7 +78,7 @@ docker run --rm \
   -s raft_base_margin=8 \
   -s raft_interface_margin=8 \
   -s raft_surface_margin=8 \
-  -s raft_airgap=0.25 \
+  -s raft_airgap=0.30 \
   -l /data/input.stl
 ```
 
@@ -102,7 +102,7 @@ These must always be passed (the bundled Tina2 definition has incorrect defaults
 | `raft_base_margin` | 8 | Per-layer margin, defaults to 15mm without override |
 | `raft_interface_margin` | 8 | Per-layer margin, defaults to 15mm without override |
 | `raft_surface_margin` | 8 | Per-layer margin, defaults to 15mm without override |
-| `raft_airgap` | 0.25 | Definition says 0.19, but raft sticks too much; 0.25 peels cleanly |
+| `raft_airgap` | 0.30 | Definition says 0.19; 0.25 still sticks; 0.30 peels cleanly |
 
 ### Support Overrides (when supports needed)
 
@@ -179,7 +179,7 @@ docker run --rm \
   -s speed_print=25 -s speed_wall_0=20 -s speed_travel=65 \
   -s machine_width=100 -s machine_depth=100 -s center_object=true \
   -s raft_margin=8 -s raft_base_margin=8 -s raft_interface_margin=8 -s raft_surface_margin=8 \
-  -s raft_airgap=0.25 \
+  -s raft_airgap=0.30 \
   -l /data/trolley_coin.stl
 
 # 3. Post-process
@@ -245,8 +245,8 @@ Build takes ~7 minutes. Only needs to be done once.
 - Compare with a known-good GUI-sliced gcode from OctoPrint
 
 ### Raft stuck to model
-- `raft_airgap=0.25` should peel cleanly
-- If still stuck, try 0.30
+- `raft_airgap=0.30` should peel cleanly
+- If still stuck, try 0.35
 
 ### Empty gcode file
 - Check for error messages about missing settings
@@ -262,7 +262,7 @@ Build takes ~7 minutes. Only needs to be done once.
 - CuraEngine 5.13.0 is the latest stable release (Docker image pinned to this version)
 - The `entina_tina2.def.json` printer definition is bundled (from Cura repo)
 - Raft is enabled by default in the Tina2 definition (required for cold bed adhesion)
-- Raft air gap is 0.25mm (overridden from definition's 0.19mm for easier raft removal)
+- Raft air gap is 0.30mm (overridden from definition's 0.19mm for easier raft removal)
 - Tree supports with raft will show support layers between raft and model — this is normal behaviour
 - GCode may contain temperature ramp-down commands near end of print — these are harmless
 - Expected print time for trolley coin: ~35 minutes (with correct raft margins)

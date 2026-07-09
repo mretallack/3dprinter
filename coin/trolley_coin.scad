@@ -11,12 +11,12 @@ finger_grip_depth = 1.0;     // Depth of finger grip recess
 finger_lip_height = 0.3;     // Small overhang lip for finger purchase
 
 // Holder parameters
-holder_wall_thickness = 1.2; // Wall thickness (1.5x minimum)
+holder_wall_thickness = 1.6; // Wall thickness (increased for base strength)
 holder_pocket_depth = 4.0;   // Depth to hold coin (increased for ball retention)
 holder_total_height = holder_wall_thickness + coin_thickness + holder_wall_thickness; // Full enclosure
 holder_pocket_diameter = coin_diameter + 0.4; // 0.4mm clearance for pocket
 holder_tab_count = 8;        // Number of retention balls
-holder_ball_diameter = 1.3;  // Diameter of retention balls (increased for better grip)
+holder_ball_diameter = 1.0;  // Diameter of retention balls (reduced for easier snap-fit)
 holder_ball_inset = -0.2;     // How much ball overlaps coin edge (interference fit)
 keyring_hole_diameter = 6.0; // Keyring hole size
 keyring_end_diameter = 10.0; // Diameter of narrow end (must be larger than hole + walls)
@@ -126,10 +126,6 @@ module holder() {
             }
         }
         
-        // NEW: Remove front lip for easy coin removal
-        // Cylinder cutout at front edge (opposite keyring end)
-        translate([0, -holder_teardrop_width/2, holder_wall_thickness])
-            cylinder(h=holder_pocket_depth + 1, d=holder_pocket_diameter + 2);
         
         // Finger hole through base to push coin out
         translate([0, 0, -0.01])
