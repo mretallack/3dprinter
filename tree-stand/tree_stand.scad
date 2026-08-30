@@ -10,10 +10,10 @@ base_diameter = 30;
 top_diameter = 40;
 
 // Overall height
-height = 50;
+height = 40;
 
 // Slot width (gap for tree trunk)
-slot_width = 5;
+slot_width = 7;
 
 // Slot depth (how far down from the top)
 slot_depth = 8;

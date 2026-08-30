@@ -13,8 +13,8 @@ A simple tapered stand for holding a small tabletop Christmas tree. The cork/pla
 |-----------|-------|
 | Base diameter | 30 mm |
 | Top diameter | 40 mm |
-| Height | 50 mm |
-| Slot width | 5 mm |
+| Height | 40 mm |
+| Slot width | 7 mm |
 | Slot depth | 8 mm |
 
 ## Printing
