@@ -54,6 +54,13 @@ This repository includes project skills in `.kiro/skills/` that provide detailed
    - **When to use**: When the user asks about print status, progress, temperature, wants to start/stop/cancel a print, upload files, or check the printer state.
    - **What it does**: Directly interacts with the OctoPrint API at `http://flower.retallack.org.uk:5000` to monitor, control, and manage print jobs.
 
+### Skill Usage Instructions for Agents
+
+When handling user requests related to viewing, slicing, rendering, or printing models in this repository:
+- **Always consult and follow the detailed workflows** defined in `.kiro/skills/<skill-name>/SKILL.md`.
+- **Do not guess parameters or docker commands**; use the exact proven commands, overrides, and post-processing steps documented in the respective skill files (e.g. required CuraEngine CLI overrides, temperature post-processing with `sed`, and OctoPrint API calls).
+- **Check dimensions and orientation** as outlined in `scad-to-print` before initiating prints.
+
 ## Building
 
 ```bash
