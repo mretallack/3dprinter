@@ -1,4 +1,4 @@
-// Planetary Gear Module with Clean Trapezoidal Gear Teeth
+// Planetary Gear Module - Fine-Tuned Bottom Gear Phase & Color-Coded Renders
 
 gear_thickness = 6;
 pip_gap = 0.2;
@@ -11,28 +11,26 @@ center_dist = r_sun + r_planet + pip_gap;
 frame_size = 38; 
 total_height = wall_t + gear_thickness + pip_gap + 4.0;
 
-// Clean gear module with true trapezoidal teeth blending into the core
-module proper_gear(teeth, r_pitch) {
+module true_gear(teeth, r_pitch) {
     union() {
-        // Main gear body (slightly smaller so teeth form the pitch profile)
-        cylinder(h=gear_thickness, r=r_pitch - 0.6, $fn=60);
-        
-        // Trapezoidal teeth
-        for (i = [0 : teeth - 1]) {
-            rotate([0, 0, i * (360 / teeth)])
-                translate([r_pitch - 0.5, 0, 0])
+        cylinder(h=gear_thickness, r=r_pitch - 0.5, $fn=60);
+        for (j = [0 : teeth - 1]) {
+            rotate([0, 0, j * (360 / teeth)])
+                translate([r_pitch - 0.4, 0, 0])
                     linear_extrude(height=gear_thickness)
                         polygon(points=[
-                            [0, -0.8],
-                            [1.2, -0.4],
-                            [1.2, 0.4],
-                            [0, 0.8]
+                            [0, -0.7],
+                            [1.0, -0.3],
+                            [1.0, 0.3],
+                            [0, 0.7]
                         ]);
         }
     }
 }
 
 module pip_compact_assembly() {
+    // Frame (Slate Gray)
+    color("SlateGray")
     difference() {
         union() {
             translate([-frame_size/2, -frame_size/2, 0])
@@ -57,26 +55,47 @@ module pip_compact_assembly() {
             cylinder(h=wall_t + 2, r=3.5, $fn=30);
     }
 
-    // Central Sun Gear
+    // 1. Center Sun Gear (Red)
+    color("Red")
     translate([0, 0, wall_t + pip_gap/2]) {
         cylinder(h=gear_thickness, r=2.0, $fn=30);
         difference() {
-            proper_gear(10, r_sun);
+            true_gear(10, r_sun);
             cylinder(h=gear_thickness + 2, r=2.0 + pip_gap, $fn=30);
         }
     }
 
-    // Planet Gears
-    for (i = [0 : 2]) {
-        rotate([0, 0, i * 120])
-            translate([center_dist, 0, wall_t + pip_gap/2]) {
-                cylinder(h=gear_thickness, r=2.0, $fn=30);
-                rotate([0, 0, i * 36])
-                difference() {
-                    proper_gear(10, r_planet);
-                    cylinder(h=gear_thickness + 2, r=2.0 + pip_gap, $fn=30);
-                }
-            }
+    // 2. Bottom Planet (Green) - angle 0 -> tuned rotation offset (+18 deg)
+    color("Green")
+    translate([center_dist * cos(0), center_dist * sin(0), wall_t + pip_gap/2]) {
+        cylinder(h=gear_thickness, r=2.0, $fn=30);
+        rotate([0, 0, 180 + 18])
+        difference() {
+            true_gear(10, r_planet);
+            cylinder(h=gear_thickness + 2, r=2.0 + pip_gap, $fn=30);
+        }
+    }
+
+    // 3. Top-Left Planet (Blue) - angle 120
+    color("RoyalBlue")
+    translate([center_dist * cos(120), center_dist * sin(120), wall_t + pip_gap/2]) {
+        cylinder(h=gear_thickness, r=2.0, $fn=30);
+        rotate([0, 0, 120 + 180])
+        difference() {
+            true_gear(10, r_planet);
+            cylinder(h=gear_thickness + 2, r=2.0 + pip_gap, $fn=30);
+        }
+    }
+
+    // 4. Top-Right Planet (Purple) - angle 240
+    color("DarkOrchid")
+    translate([center_dist * cos(240), center_dist * sin(240), wall_t + pip_gap/2]) {
+        cylinder(h=gear_thickness, r=2.0, $fn=30);
+        rotate([0, 0, 240 + 180])
+        difference() {
+            true_gear(10, r_planet);
+            cylinder(h=gear_thickness + 2, r=2.0 + pip_gap, $fn=30);
+        }
     }
 }
 
