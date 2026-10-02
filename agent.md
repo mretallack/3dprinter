@@ -30,24 +30,39 @@ python3 .kiro/skills/render-openscad/render_stl.py <input.stl> <output.png> [--e
 ## File Delivery
 When sending files (such as rendered PNG images) to the user via Telegram, always use the `SEND_FILE:<absolute_path>` marker in your response text (as instructed by the `send-file` skill).
 
-## 3D Printing Workflow
-1. **Examine files & Read documentation:** Extract archives, check accompanying PDFs or instructions for recommended print settings (layer height, supports, infill, material).
-2. **Check & Plan:** Calculate bounding box, volume, estimated weight, and print time. Provide clear parameter recommendations.
-3. **Render:** Generate visual previews (isometric and bottom/detail views) using `render_stl.py`.
-4. **Approval & Execution:** Present details, estimates, and renders to the user for confirmation before sending print jobs or proceeding.
-
-### Alternative Slicing Method (Inline `machine_start_gcode`)
-When slicing via the CLI with `CuraEngine`, you can avoid the unexpanded `{material_print_temperature_layer_0}` placeholder bug completely by explicitly providing a fully-resolved `machine_start_gcode` string argument, eliminating the need for `sed` post-processing:
-
-```bash
-docker run --rm -v "$(pwd):/data:z" \
-  -e CURA_ENGINE_SEARCH_PATH=/definitions:/extruders \
-  markretallackhome/curaengine5 slice \
-  -j /definitions/entina_tina2.def.json \
-  -o /data/output.gcode \
-  -s machine_start_gcode=";MachineType:ENTINA TINA2\nM203 Z15\nM104 S150\nG28 Z\nG28 X Y\nG1 X55 Y55 F1000\nG29\nM107\nG90\nM82\nM109 S210\nG92 E0\nG1 X90 Y6 Z0.27 F2000\nG1 X20 Y6 Z0.27 E15 F1000\nG92 E0\nM203 Z5" \
-  -l /data/model.stl
-```
+## 3D Printing Workflow (`scad-to-print`)
+1. **Examine files & Read documentation:** Check dimensions, orientation, and bed fit (Weedo Tina2 Basic has a 100×100mm unheated bed and 0.4mm nozzle).
+2. **Check & Plan:** Calculate bounding box, volume, estimated weight, and print time. Always use a raft for cold bed adhesion (`adhesion_type=raft`).
+3. **Render:** Generate visual previews using `render_stl.py`.
+4. **Slicing via CuraEngine (Mandatory Overrides):**
+   When slicing via CLI, always apply the proven `scad-to-print` parameter overrides to ensure correct speeds (to prevent failure/bad adhesion) and parameters:
+   ```bash
+   docker run --rm \
+     -v "$(pwd):/data:z" \
+     -e CURA_ENGINE_SEARCH_PATH=/definitions:/extruders \
+     markretallackhome/curaengine5 slice \
+     -j /definitions/entina_tina2.def.json \
+     -o /data/output.gcode \
+     -s roofing_layer_count=0 \
+     -s flooring_layer_count=0 \
+     -s layer_height=0.2 \
+     -s infill_sparse_density=20 \
+     -s material_print_temperature=200 \
+     -s material_print_temperature_layer_0=210 \
+     -s speed_travel=65 \
+     -s speed_print=25 \
+     -s speed_wall_0=20 \
+     -s machine_width=100 \
+     -s machine_depth=100 \
+     -s center_object=true \
+     -s raft_margin=8 \
+     -s raft_base_margin=8 \
+     -s raft_interface_margin=8 \
+     -s raft_surface_margin=8 \
+     -s raft_airgap=0.30 \
+     -l /data/input.stl
+   ```
+5. **Approval & Execution:** Present details, estimates, and renders to the user for confirmation before sending print jobs or proceeding.
 
 ## OctoPrint API Integration
 When interacting with the printer via OctoPrint (at `http://flower.retallack.org.uk:5000`), use the API key stored in `.env` (`OCTOPRINT_KEY`).
