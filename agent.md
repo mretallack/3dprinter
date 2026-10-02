@@ -32,10 +32,10 @@ When sending files (such as rendered PNG images) to the user via Telegram, alway
 
 ## 3D Printing Workflow (`scad-to-print`)
 1. **Examine files & Read documentation:** Check dimensions, orientation, and bed fit (Weedo Tina2 Basic has a 100×100mm unheated bed and 0.4mm nozzle).
-2. **Check & Plan:** Calculate bounding box, volume, estimated weight, and print time. Always use a raft for cold bed adhesion (`adhesion_type=raft`).
+2. **Check & Plan:** Calculate bounding box, volume, estimated weight, and print time. Always use a raft with `raft_airgap=0.25` for cold bed adhesion.
 3. **Render:** Generate visual previews using `render_stl.py`.
 4. **Slicing via CuraEngine (Mandatory Overrides):**
-   When slicing via CLI, always apply the proven `scad-to-print` parameter overrides to ensure correct speeds (to prevent failure/bad adhesion) and parameters:
+   When slicing via CLI, always apply the proven `scad-to-print` parameter overrides (including `raft_airgap=0.25` for reliable cold bed adhesion and conservative speeds):
    ```bash
    docker run --rm \
      -v "$(pwd):/data:z" \
@@ -59,7 +59,7 @@ When sending files (such as rendered PNG images) to the user via Telegram, alway
      -s raft_base_margin=8 \
      -s raft_interface_margin=8 \
      -s raft_surface_margin=8 \
-     -s raft_airgap=0.30 \
+     -s raft_airgap=0.25 \
      -l /data/input.stl
    ```
 5. **Approval & Execution:** Present details, estimates, and renders to the user for confirmation before sending print jobs or proceeding.
