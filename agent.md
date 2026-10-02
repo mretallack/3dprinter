@@ -72,3 +72,11 @@ When interacting with the printer via OctoPrint (at `http://flower.retallack.org
   source .env
   curl -s -H "X-Api-Key: $OCTOPRINT_KEY" http://flower.retallack.org.uk:5000/api/job
   ```
+
+## 🚨 ZERO FAKE GCODE & SLICING VALIDATION RULE (MANDATORY)
+1. **Never create, write, or send manual/mock GCode stub files** (e.g. files without extrusion `E` moves or actual sliced geometry). Slicing must **always** be performed successfully via CuraEngine.
+2. **Mandatory GCode Validation Gate:** Before sending any `.gcode` file to OctoPrint or the printer, run a validation script checking:
+   - File size is substantial (> 10 KB).
+   - Contains valid extrusion (`E`) commands.
+   - Contains layer indicators (`;LAYER:`).
+3. If CuraEngine fails due to missing settings, fix the command arguments or definition files—**never** fall back to writing a dummy gcode file.
