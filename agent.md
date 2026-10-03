@@ -95,3 +95,34 @@ When interacting with the printer via OctoPrint (at `http://flower.retallack.org
    - Contains valid extrusion (`E`) commands.
    - Contains layer indicators (`;LAYER:`).
 3. If CuraEngine fails due to missing settings, fix the command arguments or definition files—**never** fall back to writing a dummy gcode file.
+
+## 📋 Pre-Print Validation Checklist (MANDATORY BEFORE PRINTING)
+Before generating GCode, slicing, or sending any print job to OctoPrint, you **MUST** review and verify every item on this checklist:
+
+### 1. Model & Geometry Checks
+- [ ] **Dimensions:** Model footprint fits within the 100×100mm Weedo Tina2 bed (accounting for the 8mm raft margin).
+- [ ] **Units:** STL units verified in millimetres (not inches or metres).
+- [ ] **Orientation:** Model sits flat on the build plate (`Z = 0`) and has been visually previewed via `render_stl.py`.
+- [ ] **Watertight/Manifold:** Mesh is solid with no holes or non-manifold geometry.
+
+### 2. Slicing Parameter Checks (CuraEngine Overrides)
+- [ ] **Conservative Speeds (Tina2 Frame Protection):**
+  - `speed_print = 25` mm/s
+  - `speed_wall_0 = 20` mm/s
+  - `speed_travel = 65` mm/s
+- [ ] **Cold Bed Adhesion (Raft Settings):**
+  - `adhesion_type = raft`
+  - `raft_airgap = 0.25` (crucial for clean raft peeling and adhesion)
+  - `raft_margin = 8` (and all base/interface/surface margins set to 8)
+- [ ] **Temperatures:**
+  - `material_print_temperature = 200`
+  - `material_print_temperature_layer_0 = 210`
+
+### 3. GCode Safety Gates (Zero-Stub & Temperature Rule)
+- [ ] **File Size:** Output `.gcode` file size is substantial (> 10 KB).
+- [ ] **Extrusion Check:** File contains valid extrusion (`E`) commands and layer tags (`;LAYER:`).
+- [ ] **Start GCode / Temperature Wait:** Explicitly includes `M109 S210` so the hotend pauses and heats fully to 210°C before printing begins (preventing cold extrusion stalls).
+
+### 4. OctoPrint & Printer State
+- [ ] **Printer Status:** OctoPrint reports state as `Operational` and connected.
+- [ ] **Bed Prep:** Bed is clean and free of oils/debris.
